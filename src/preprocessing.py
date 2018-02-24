@@ -1,7 +1,9 @@
+import os
+import pickle
 import pandas as pd
 import numpy as np
+from pathlib import Path
 from pycorenlp import StanfordCoreNLP
-
 
 
 class Preprocessing():
@@ -12,8 +14,7 @@ class Preprocessing():
     About the CoreNLP server: if server is offline, run the command below in 
     Terminal from the stanford CoreNLP folder:
     
-    java -mx4g -cp "*" edu.stanford.nlp.pipeline.StanfordCoreNLPServer 
-    -port 9001 -timeout 15000
+    java -mx4g -cp "*" edu.stanford.nlp.pipeline.StanfordCoreNLPServer -port 9001 -timeout 15000
     """
     
     
@@ -31,24 +32,52 @@ class Preprocessing():
         A dictionary of words and corresponding vectors
         """
 
-        print("Loading Glove Model")
-        with open(file_path,'r', encoding="utf8") as f:
-            embeddings_dict = {}
-            cnt = 0
-            for i, line in enumerate(f):
+        cached_file = '../data/glove.pickle'
+        if os.path.isfile(cached_file): 
+            print("Found pickled GloVe file. Loading...")
+            with open(cached_file, 'rb') as handle:
+                embeddings_dict = pickle.load(handle)
+        else:
+            print("Loading Glove Model from .txt...")
+            with open(file_path,'r', encoding="utf8") as f:
+                embeddings_dict = {}
+                cnt = 0
+                for i, line in enumerate(f):
 
-                split_line = line.split()
+                    split_line = line.split()
 
-                # Skip aberrant lines
-                if not len(split_line) == 301:
-                    continue 
+                    # Skip aberrant lines
+                    if not len(split_line) == 301:
+                        continue 
 
-                word = split_line[0]
-                embedding = np.array([float(val) for val in split_line[1:]])
-                embeddings_dict[word] = embedding
+                    word = split_line[0]
+                    embedding = np.array([float(val) for val in split_line[1:]])
+                    embeddings_dict[word] = embedding
+                    
+            with open('../data/glove.pickle', 'wb') as handle:
+                print("Saving GloVes as pickle...")
+                pickle.dump(embeddings_dict, handle, protocol=pickle.HIGHEST_PROTOCOL)
 
-            print("Done. {} words loaded!".format(len(embeddings_dict)))
+        print("Done. {} words loaded!".format(len(embeddings_dict)))
+        
+        
+        
         return embeddings_dict
+    
+    
+    def preprocess(self, text):
+        """
+        Tokenizes and applies word embeddings to a text. Also pads or cuts the whole
+        sequence to length 600.
+        """
+        tokenized_text = self.tokenize(text)
+        embedded_text = self.embed(tokenized_text)
+        embedded_text = embedded_text[:600,:]
+        padded_embeddings = np.zeros([600, 300])
+        padded_embeddings[:embedded_text.shape[0], :embedded_text.shape[1]] = embedded_text
+
+        return padded_embeddings
+    
     
     def tokenize(self, text):
         """
@@ -67,6 +96,7 @@ class Preprocessing():
             tokenized_text.append(word)
 
         return tokenized_text
+    
     
     def embed(self, words):
         """
@@ -90,11 +120,5 @@ class Preprocessing():
 
         return word_vectors
 
-    def preprocess(text):
-        """
-        Tokenizes and applies word embeddings to a text.
-        """
-        tokenized_text = self.tokenize(text)
-        embedded_text = self.embed(tokenized_text, self.embeddings)
-
-        return embedded_text
+    
+    
