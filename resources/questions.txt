@@ -1,0 +1,43 @@
+Open questions
+
+General
+
+Do we train this whole monster end-to-end, or do we train it in parts?
+	E.g. in a single Torch model, or in separate torch models (that may be in the same 	script)
+	Do the encoders use the same error signal as the decoder or are they trained 	separately?
+
+	In an encoder you basically need a mapping, doesn't really matter what the 	mapping is, as long as you know its function. Does this mean that you just run it 	with random inits and leave it at that? This way you would get outputs that 	incorporate context and stuff, but just in a random way.. Does that make sense?
+
+What should be the length of the word vectors?
+	If it's 200 this would align with the size of the encoding vectors that follow. 	These are of length 200 because of the 200 hidden nodes in the LSTM layers. 	Otherwise, the word vectors would be condensed from 300 to 200. 
+	Is this problematic?
+	Am I sure the word vectors are of length 300?
+
+
+2.1 Document and Question Encoder
+
+The max sequence length is set to 600 in the paper. 
+	Is this for the questions AND the documents?
+	Do we set ALL lengths to 600 and pad with zeros?
+
+Do we use our input as our target and train these encoders separately?
+	Should we use MSE as our loss function?
+
+	The encoders don't seem to learn over epochs... 
+		Is this a problem in this case?
+		How low should the MSE be in order for it to be a good result?
+
+Or do we connect it to the whole pipeline and use our label as our target and 
+propagate back through all the model components?
+
+How do we make a sentinel vector?
+
+When they say they use the same LSTM to share representation power, do they mean the exact same LSTM with the exact same weights? How would this work in practice?
+
+d_t goes from 0 to n+1 and encodes each word in the document, right?
+
+2.2 Coattention Encoder
+
+How do we train the BiLSTM? Same question as above: does this connect to the decoder en does the error propagate backwards all the way through the encoders, or are encoders separate entities that are trained on their input?
+
+In the bi-LSTM, what do we train on? 
